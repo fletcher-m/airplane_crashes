@@ -1,0 +1,41 @@
+---
+title: "Airplane Crashes"
+output: html_document
+date: "2023-12-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+# read in airplane data
+airplane_crashes <- read_csv("Airplane_Crashes_and_Fatalities_Since_1908.csv")
+head(airplane_crashes)
+```
+
+## Data Wrangling
+
+```{r}
+# convert date column to date type
+airplane_crashes$Date <- as.Date(airplane_crashes$Date, format = "%m/%d/%Y")
+
+# add column that displays number of total crashes for each year
+airplane_crashes <- airplane_crashes |> 
+  mutate(Year = lubridate::year(Date)) |> 
+  group_by(Year) |> 
+  mutate(NumCrashesYear = n())
+
+```
+
+```{r}
+airplane_crashes <- airplane_crashes |> 
+  mutate(Month = lubridate::month(Date)) |> 
+  group_by(Month) |> 
+  mutate(NumCrashesMonth = n())
+```
+
