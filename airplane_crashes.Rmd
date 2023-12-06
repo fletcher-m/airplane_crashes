@@ -9,7 +9,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+library(forecast)
 library(tidyverse)
+library(lterdatasampler)
+library(tsibble)
+library(feasts)
+library(lubridate)
 ```
 
 ```{r}
@@ -33,9 +38,68 @@ airplane_crashes <- airplane_crashes |>
 ```
 
 ```{r}
+# add column that displays number of total crashes for each year
 airplane_crashes <- airplane_crashes |> 
   mutate(Month = lubridate::month(Date)) |> 
   group_by(Month) |> 
   mutate(NumCrashesMonth = n())
 ```
+
+```{r}
+ggplot(data = airplane_crashes, aes(x = Year, y = NumCrashesYear)) +
+  geom_line() +
+  labs(title = "Number of Plane Crashes per Year (1908-2014)",
+       y = "Number of Documented Crashes")
+```
+```{r}
+ggplot(data = airplane_crashes, aes(x = factor(Month), y = NumCrashesMonth)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(0, max(airplane_crashes$NumCrashesMonth) + 100) +
+  labs(title = "Number of Plane Crashes Among the Months (1908-2014)",
+       y = "Number of Documented Crashes",
+       x = "Month of the Year")
+```
+
+## Make second dataset with average per yearmonth
+
+```{r}
+airplane_crashes_2 <- airplane_crashes |> 
+  select(-Year, -NumCrashesMonth, -Month, -NumCrashesYear)
+
+airplane_crashes_2 <- airplane_crashes_2 |> 
+   mutate(yr_mo = yearmonth(Date))
+
+airplane_crashes_2 <- airplane_crashes_2 |> 
+  group_by(yr_mo) |> 
+  mutate(avg_crashes = n()) |> 
+   distinct(yr_mo, .keep_all = TRUE) |> 
+  as_tsibble(index = yr_mo)
+ 
+
+airplane_crashes_2 %>% 
+  autoplot(avg_crashes)
+```
+ 
+    
+```{r}
+airplane_crashes_2 <- airplane_crashes_2 |> 
+  fill_gaps(yr_mo)
+
+dcmp <- airplane_crashes_2 %>%
+  model(STL(avg_crashes, robust = TRUE))
+
+components(dcmp)
+
+
+
+
+#dcmp = airplane_crashes_2 %>% 
+  #model(STL(avg_crashes))
+
+#components(dcmp)
+```
+
+
+
+
 
